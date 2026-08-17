@@ -1,0 +1,55 @@
+[project]
+name = "audiobooker"
+version = "0.1.0"
+description = "Audiobooker — transforma livros e documentos em audiobooks narrados com Resemble AI Chatterbox"
+readme = "README.md"
+requires-python = ">=3.11,<3.12"
+license = { text = "Proprietary" }
+authors = [{ name = "Audiobooker" }]
+
+dependencies = [
+    # Interface
+    "PySide6>=6.7,<7",
+    # TTS
+    "chatterbox-tts>=0.1.7",
+    # Parsing de documentos
+    "PyMuPDF>=1.24",
+    "python-docx>=1.1",
+    "mobi>=0.4.1",
+    "EbookLib>=0.18",
+    "beautifulsoup4>=4.12",
+    "lxml>=5.0",
+    "markdown-it-py>=3.0",
+    # Áudio / infraestrutura
+    "soundfile>=0.12",
+    "imageio-ffmpeg>=0.5",
+    # numpy and pyloudnorm are already pulled in transitively (numpy via
+    # torch/chatterbox-tts, pyloudnorm via chatterbox-tts's own librosa
+    # chain — both already referenced in Audiobooker.spec's PyInstaller
+    # copy_metadata list). Declared explicitly now that the narration
+    # pipeline's DSP code (infrastructure/audio/) imports them directly, so
+    # they're a documented hard dependency rather than an implicit one.
+    "numpy>=1.24",
+    "pyloudnorm>=0.2",
+    "platformdirs>=4.0",
+    "charset-normalizer>=3.0",
+    # Pinned below 81: resemble-perth (a hard chatterbox-tts dependency, used
+    # for its audio watermarker) still imports the legacy `pkg_resources` API
+    # at runtime. setuptools >=81 dropped it, which makes
+    # ChatterboxMultilingualTTS.from_pretrained(...) crash on
+    # `perth.PerthImplicitWatermarker()` with a confusing
+    # "'NoneType' object is not callable". Verified locally against the
+    # installed chatterbox-tts==0.1.7. Revisit once resemble-perth migrates
+    # off pkg_resources upstream.
+    "setuptools<81",
+]
+
+[project.optional-dependencies]
+build = ["pyinstaller>=6.10", "pillow>=10.0"]
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"

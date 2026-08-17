@@ -1,0 +1,57 @@
+name: Build
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Linux Qt/audio system libraries
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgl1 libegl1 libxkbcommon0 ffmpeg
+
+      - name: Setup (Linux)
+        if: runner.os == 'Linux'
+        run: bash scripts/setup_linux.sh
+
+      - name: Setup (Windows)
+        if: runner.os == 'Windows'
+        run: pwsh scripts/setup_windows.ps1
+
+      - name: Build (Linux)
+        if: runner.os == 'Linux'
+        run: bash scripts/build_linux.sh
+
+      - name: Build (Windows)
+        if: runner.os == 'Windows'
+        run: pwsh scripts/build_windows.ps1
+
+      - name: Upload artifact (Linux)
+        if: runner.os == 'Linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: Audiobooker-linux
+          path: dist/Audiobooker/
+
+      - name: Upload artifact (Windows)
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: Audiobooker-windows
+          path: dist/Audiobooker/
