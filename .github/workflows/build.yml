@@ -3,8 +3,13 @@ name: Build
 on:
   workflow_dispatch:
   push:
+    branches:
+      - main
     tags:
       - "v*"
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -42,16 +47,55 @@ jobs:
         if: runner.os == 'Windows'
         run: pwsh scripts/build_windows.ps1
 
+      - name: Package (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          cd dist
+          zip -r ../Audiobooker-linux.zip Audiobooker
+
+      - name: Package (Windows)
+        if: runner.os == 'Windows'
+        run: Compress-Archive -Path dist/Audiobooker -DestinationPath Audiobooker-windows.zip
+
       - name: Upload artifact (Linux)
         if: runner.os == 'Linux'
         uses: actions/upload-artifact@v4
         with:
           name: Audiobooker-linux
-          path: dist/Audiobooker/
+          path: Audiobooker-linux.zip
 
       - name: Upload artifact (Windows)
         if: runner.os == 'Windows'
         uses: actions/upload-artifact@v4
         with:
           name: Audiobooker-windows
-          path: dist/Audiobooker/
+          path: Audiobooker-windows.zip
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Determine release tag/name
+        id: rel
+        run: |
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            echo "tag=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+            echo "name=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+          else
+            short_sha="${GITHUB_SHA::7}"
+            echo "tag=build-${GITHUB_RUN_NUMBER}-${short_sha}" >> "$GITHUB_OUTPUT"
+            echo "name=Build #${GITHUB_RUN_NUMBER} (${short_sha})" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.rel.outputs.tag }}
+          name: ${{ steps.rel.outputs.name }}
+          prerelease: ${{ github.ref_type != 'tag' }}
+          files: artifacts/*.zip
