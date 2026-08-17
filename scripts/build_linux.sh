@@ -29,6 +29,23 @@ python -c "import PySide6, chatterbox, torch" || {
 
 pip install -q pyinstaller
 
+# torch's default PyPI wheel pulls in the full nvidia-*-cu12 dependency
+# stack. A few of those are unused by this app and just add dead weight to
+# the packaged release (this is a single-process, single-GPU desktop app,
+# not distributed training, and ships no profiling UI):
+#   - nvidia-nccl-cu12: multi-GPU collective comms (torch.distributed only)
+#   - nvidia-nvtx-cu12: profiler annotation markers (torch.profiler only)
+#   - nvidia-cufile-cu12: GPUDirect Storage direct-to-GPU file I/O (opt-in,
+#     unused by chatterbox/transformers' normal checkpoint loading)
+#   - nvidia-cuda-cupti-cu12: CUDA profiling tools interface (torch.profiler
+#     only)
+# All four are dlopen'd lazily by torch only when their specific feature is
+# used, not linked at process/import time, so removing them shouldn't affect
+# normal inference. Uninstalled (not just excluded from collection) so
+# PyInstaller's binary dependency scan never has the .so files to pick up.
+echo "Removendo componentes CUDA não utilizados (nccl, nvtx, cufile, cupti)..."
+pip uninstall -y nvidia-nccl-cu12 nvidia-nvtx-cu12 nvidia-cufile-cu12 nvidia-cuda-cupti-cu12 2>/dev/null || true
+
 echo "Limpando builds anteriores..."
 rm -rf build dist
 

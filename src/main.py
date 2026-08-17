@@ -51,6 +51,19 @@ def _setup_logging() -> None:
 
     console_handler = logging.StreamHandler()
     console_handler.setFormatter(logging.Formatter("%(levelname)s %(name)s: %(message)s"))
+    # On Windows, a console attached via a legacy code page (cp1252
+    # "charmap") can't encode characters like the ✅ that chatterbox's own
+    # logger emits. StreamHandler.emit() normally swallows encoding errors,
+    # but its handleError() fallback re-prints the same unencodable message
+    # and that second UnicodeEncodeError isn't an OSError, so it escapes
+    # uncaught and crashes whatever code triggered the log call instead of
+    # just dropping the console line. errors="backslashreplace" makes the
+    # stream itself tolerant so this can't happen.
+    if hasattr(console_handler.stream, "reconfigure"):
+        try:
+            console_handler.stream.reconfigure(errors="backslashreplace")
+        except (ValueError, OSError):
+            pass
 
     root_logger = logging.getLogger()
     root_logger.setLevel(logging.INFO)
@@ -78,6 +91,22 @@ def main() -> int:
     # process to scripts/audiobooker.desktop and use its Icon= for the
     # taskbar/dock, not just the in-process setWindowIcon below (per §2).
     QGuiApplication.setDesktopFileName("audiobooker")
+
+    if sys.platform == "win32":
+        # Without an explicit AppUserModelID, Windows falls back to grouping
+        # this process under its host executable's own taskbar identity
+        # (python.exe/pythonw.exe in dev mode, or a generic default even for
+        # the frozen .exe) instead of treating it as its own app — which is
+        # why the taskbar/titlebar can show a blank or wrong icon even
+        # though setWindowIcon() below is set correctly and the .exe has its
+        # own --icon resource. Must run before QApplication()/any window is
+        # created. No-op (silently) on non-Windows or older Windows builds
+        # missing this shell32 export.
+        import ctypes
+        try:
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("Audiobooker.Audiobooker")
+        except (AttributeError, OSError):
+            pass
 
     app = QApplication(sys.argv)
     app.setApplicationName("Audiobooker")
