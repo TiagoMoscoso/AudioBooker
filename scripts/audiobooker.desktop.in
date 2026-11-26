@@ -1,9 +1,0 @@
-[Desktop Entry]
-Type=Application
-Name=Audiobooker
-Comment=Converta livros e documentos em audiobooks narrados localmente
-Exec=__EXEC_PATH__
-Icon=__ICON_PATH__
-Terminal=false
-Categories=AudioVideo;Audio;Utility;
-StartupWMClass=audiobooker
