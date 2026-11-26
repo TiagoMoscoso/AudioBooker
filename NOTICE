@@ -1,0 +1,12 @@
+Audiobooker
+
+Derivado de AudioBooker, de TiagoMoscoso (https://github.com/TiagoMoscoso/AudioBooker), licenciado sob Apache-2.0
+(veja o arquivo LICENSE). Esta versao e uma reescrita substancial para Windows: novos motores de voz, efeitos,
+dicionario de pronuncias, intonacao por trecho, roteiro com personagens e interface propria. O codigo original
+foi substituido; a licenca Apache-2.0 e o credito ao projeto de origem foram mantidos.
+
+Modelos e pacotes de terceiros (baixados pelo instalador, nao incluidos aqui; cada um sob a sua licenca):
+  Chatterbox (MIT), da Resemble AI: motor padrao, clonagem de voz e emocao.
+  Kokoro-82M (Apache-2.0) via kokoro-onnx: opcional.
+  Piper (piper-tts, GPL-3.0) e suas vozes (licenca varia por voz, veja rhasspy/piper-voices): opcional; e
+  instalado pelo proprio usuario, nao faz parte deste repositorio.
